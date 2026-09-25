@@ -70,7 +70,10 @@ class InfoService extends Service {
     let sum = list.slice(1)
       .map(x => x.difficulty)
       .reduce((x, y) => x + y)
-    return sum * 2 ** 32 * this.app.chain.stakeTimeStep / interval
+    // The DigiWage kernel checks hash < target * (value / 100): the same
+    // difficulty means 100x the stake weight of Qtum's target * value.
+    let kernelScale = this.app.chain.wireFormat === 'digiwage' ? 100 : 1
+    return sum * 2 ** 32 * this.app.chain.stakeTimeStep * kernelScale / interval
   }
 
   async getFeeRates() {
