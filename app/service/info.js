@@ -8,15 +8,21 @@ class InfoService extends Service {
     let dgpInfo = JSON.parse(await this.app.redis.hget(this.app.name, 'dgpinfo')) || {}
     return {
       height,
-      supply: this.getTotalSupply(),
-      ...this.app.chain.name === 'mainnet' ? {circulatingSupply: this.getCirculatingSupply()} : {},
+      supply: await this.getTotalSupply(),
+      ...this.app.chain.name === 'mainnet' ? {circulatingSupply: await this.getCirculatingSupply()} : {},
       netStakeWeight: Math.round(stakeWeight),
       feeRate,
       dgpInfo
     }
   }
 
-  getTotalSupply() {
+  async getTotalSupply() {
+    // DigiWage chains keep the legacy reward schedule; the node tracks the
+    // exact money supply.
+    if (this.app.chain.wireFormat === 'digiwage') {
+      let client = new this.app.qtuminfo.rpc(this.app.config.qtuminfo.rpc)
+      return (await client.getblockchaininfo()).moneysupply
+    }
     let height = this.app.blockchainInfo.tip.height
     if (height <= this.app.chain.lastPoWBlockHeight) {
       return height * 20000
@@ -36,12 +42,13 @@ class InfoService extends Service {
   }
 
   getTotalMaxSupply() {
+    // Legacy nMaxMoneyOut (MAX_MONEY in the DigiWage core).
+    if (this.app.chain.wireFormat === 'digiwage') return 120000000
     return 1e8 + 985500 * 4 * (1 - 1 / 2 ** 7) / (1 - 1 / 2)
   }
 
-  getCirculatingSupply() {
-    let height = this.app.blockchainInfo.tip.height
-    let totalSupply = this.getTotalSupply(height)
+  async getCirculatingSupply() {
+    let totalSupply = await this.getTotalSupply()
     if (this.app.chain.name === 'mainnet') {
       return totalSupply - 575e4
     } else {
@@ -63,7 +70,7 @@ class InfoService extends Service {
     let sum = list.slice(1)
       .map(x => x.difficulty)
       .reduce((x, y) => x + y)
-    return sum * 2 ** 32 * 16 / interval
+    return sum * 2 ** 32 * this.app.chain.stakeTimeStep / interval
   }
 
   async getFeeRates() {
