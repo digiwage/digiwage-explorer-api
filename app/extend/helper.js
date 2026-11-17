@@ -1,6 +1,11 @@
 function transformSQLArg(arg) {
   if (typeof arg === 'string') {
-    return `'${arg}'`
+    // Escape single quotes and backslashes rather than interpolating raw --
+    // every call site today only ever passes numbers/Buffers, but this
+    // looks exactly like a safe parameterized helper, so a future caller
+    // passing a plain string (an on-chain token name/symbol, say -- fully
+    // attacker-controlled) would otherwise get silent SQL injection.
+    return `'${arg.replace(/[\\']/g, '\\$&')}'`
   } else if (['number', 'bigint'].includes(typeof arg)) {
     return arg.toString()
   } else if (Buffer.isBuffer(arg)) {
