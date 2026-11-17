@@ -17,6 +17,12 @@ class StatisticsController extends Controller {
     ctx.body = blockInterval
   }
 
+  // Precomputed chart statistics (see app.js update-chart-statistics)
+  async chart() {
+    const {app, ctx} = this
+    ctx.body = JSON.parse(await app.redis.hget(app.name, ctx.params.name) || '[]')
+  }
+
   async addressGrowth() {
     const {app, ctx} = this
     let addressGrowth = JSON.parse(await app.redis.hget(app.name, 'address-growth') || '[]')

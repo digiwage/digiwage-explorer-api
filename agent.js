@@ -37,6 +37,7 @@ module.exports = function(agent) {
       agent.messenger.sendRandom('update-daily-transactions')
       agent.messenger.sendRandom('update-block-interval')
       agent.messenger.sendRandom('update-address-growth')
+      agent.messenger.sendRandom('update-chart-statistics')
       lastTipHash = tip.hash
     }
   }

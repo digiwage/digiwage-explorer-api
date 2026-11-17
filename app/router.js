@@ -215,6 +215,10 @@ module.exports = app => {
   router.get('/stats/daily-transactions', controller.statistics.dailyTransactions)
   router.get('/stats/block-interval', controller.statistics.blockInterval)
   router.get('/stats/address-growth', controller.statistics.addressGrowth)
+  router.get(
+    '/stats/:name(daily-blocks|daily-supply|daily-stakers|daily-contracts|daily-delegations|balance-distribution)',
+    controller.statistics.chart
+  )
 
   io.route('subscribe', io.controller.default.subscribe)
   io.route('unsubscribe', io.controller.default.unsubscribe)

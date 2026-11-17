@@ -36,6 +36,27 @@ module.exports = app => {
     await app.redis.hset(app.name, 'address-growth', JSON.stringify(addressGrowth))
   })
 
+  // Chart statistics: recomputed on the same 2 minute cycle, served from redis
+  const chartStatistics = {
+    'daily-blocks': 'getDailyBlocks',
+    'daily-supply': 'getDailySupply',
+    'daily-stakers': 'getDailyStakers',
+    'daily-contracts': 'getDailyContracts',
+    'daily-delegations': 'getDailyDelegations',
+    'balance-distribution': 'getBalanceDistribution'
+  }
+  app.messenger.on('update-chart-statistics', async () => {
+    let ctx = app.createAnonymousContext()
+    for (let [key, method] of Object.entries(chartStatistics)) {
+      try {
+        let value = await ctx.service.statistics[method]()
+        await app.redis.hset(app.name, key, JSON.stringify(value))
+      } catch (err) {
+        ctx.logger.error(`update ${key} failed`, err)
+      }
+    }
+  })
+
   app.messenger.on('update-stakeweight', async () => {
     let ctx = app.createAnonymousContext()
     let stakeWeight = await ctx.service.info.getStakeWeight()
